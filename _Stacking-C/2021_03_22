@@ -1,0 +1,11 @@
+# About millis()
+
+millis() and delay()
+
+two advantages of using millis() rather than using delay()
+1. accurate timing
+we can run the loop as often as we want and it does not affected by execution time(as long as the execution time is less than the desired period).
+We can not know when would the loop execute since delay() is not possible.
+
+2. non-blocking
+we can run the code while "waiting" For example, we can print "Hello" over serial even when the code is doing other things. However, delay() function pauses its whole code.
