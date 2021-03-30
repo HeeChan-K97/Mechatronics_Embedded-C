@@ -1,0 +1,13 @@
+/*lighting up a bulb*/
+
+#include <avr/io.h>
+//using PIN9
+void setup() 
+{
+  DDRB|=(1<<DDB1);
+}
+
+void loop() 
+{
+  PORTB|=(1<<PORTB1);
+}
