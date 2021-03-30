@@ -1,0 +1,17 @@
+#Embedded C
+
+C/Basic C and Embedded C mostly the same in syntax and structure of code. Many consider Embedded C an extension of the C language.
+However, there are subtle differences:
+ C is a general purpose programming language, while Embedded C focuses on microprocessor and embedded systems.
+Embedded C often interacts with fixed point numbers, I/O ports, and registers. 
+
+#AVR programming
+
+Arduinos are conventionally programming with the C++ Arduino language library. 
+However, it is possible to use C to directly program the microprocessor ATmega328P.
+The <avr/io.h> header file will need to be included to define the addresses of the registers and ports on the microprocessor.
+
+#Debugging in Arduino IDE
+
+The Arduino IDE does not support breakpoints, this means that you will need another way to check if the program has gone through certain lines of code.
+The serial() Arduino functions will allow you to print checkpoints in your code after certain lines. These can act as checkpoints for you to debug with.
