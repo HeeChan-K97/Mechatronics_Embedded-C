@@ -1,0 +1,17 @@
+Serial.println();
+
+Description
+Prints data to the serial port as human-readable ASCII text followed by a carriage return character (ASCII 13, or '\r') and a newline character (ASCII 10, or '\n'). This command takes the same forms as Serial.print().
+Parameters
+Serial: serial port object. See the list of available serial ports for each board on the Serial main page.
+val: the value to print. Allowed data types: any data type.
+format: specifies the number base (for integral data types) or number of decimal places (for floating point types).
+Returns
+println() returns the number of bytes written, though reading that number is optional. Data type: size_t.
+
+println 과 print function의 차이점은 println 은 다음 함수가 한줄을 넘긴 즉, enter키를 누른것과 같은 효과를 보여주지만 print 는 기존 형식처럼 쭉 이어서 문자를 형성한다.
+
+millis() 는 4억 이상까지 카운트 되기 때문에 이 큰 숫자를 보관하는 상자는 그만큼 커야 한다. unsigned long 에 millis() 변수를 저장한다. millis() always returns positive number. 
+
+2 주의점
+Raw numbers(called integer constants) should have the UL formatter at the end when used in calculations with a variable that is an unsigned long
