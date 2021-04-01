@@ -1,0 +1,27 @@
+#What is a clock?
+Generates a signal at consistent frequency. Just generating consistent signal, tick.
+Arduino has a on board crystal oscillator circuit used for a clock sourse in Arduino.
+
+Timer counter module: count the number of ticks abling to read how much the time has passed since booting the arduino board.
+Two major abilities: count the clock ticks
+		   : keeps a running tally of those ticks
+
+타이머가 다 돌고 다시 처음부터 시작하는 프로세스를 overflow 라고 한다.
+
+#타이머가 millis()와 아두이노에서 사용되는 목적은 무엇일까?
+
+The millis() function gives us access to the running tally that the timer/counter has been keeping track of
+=타이머는 계속해서 흐르고 있고 millis()를 쓸 때 현재 지나고 있는 시간을 millisecond 단위로 불러온다.
+previousTime = millis() //Returns the current value of the timer/counter in milliseconds.
+쉽게 말해서 millis를 통해 되돌려진(returned) 값은, 아두이노 보드가 시작된 이후에 지난 시간(time)의 값이다.
+
+#call, return...?
+
+call이란,
+
+eg)	previousTime = millis()
+	내가 millis라는 함수를 calling 하고 있다.
+
+return이란,
+
+eg)	millis() 함수를 통해서 나타난 값, millis() function has returned the current time in milliseconds that Arduino has been running.
