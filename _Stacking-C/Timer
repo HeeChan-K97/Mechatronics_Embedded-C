@@ -1,0 +1,5 @@
+# Timer Module
+
+Timers are essentially counters that fills at a certain clock frequency
+8 Bit Timers is 0x00-0xff or 0-255, 16 Bit is 0x0000-0xffff or 0-65536
+Timer prescaler intentionally lowers the clock frequency through by an integer division (ClockFrequency/Prescaler).
