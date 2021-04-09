@@ -1,0 +1,9 @@
+//This will change the prescaler to 128, setting your ADC clock to 125kHz.
+void setupADC()
+{
+ ADCSRA=(1<<ADEN);    //Enables the ADC module
+ ADMUX=(1<<REFS0);    //Setting reference volatge to Vcc
+ ADCSRA|=(1<<ADPS2);
+ ADCSRA|=(1<<ADPS1);
+ ADCSRA|=(1<<ADPS0);
+}
