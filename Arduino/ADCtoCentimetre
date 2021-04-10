@@ -1,0 +1,1 @@
+centimetres = 10650.08 * exp(-0.935 * log(sensor_read)) - 10;
