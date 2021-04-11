@@ -1,0 +1,61 @@
+if~else statement
+
+What does if function do
+‘if’ is operates under a system called ‘conditional execution’, it works under a specific condition.
+If only one command needs to be executed, we do not need {} but to look clear {} would useful.
+The if statement check condition satisfied from top to bottom.
+When a condition is met execute the relevant block then skip the rest of code blocks.
+If an if statement that satisfies the condition the rest of if statements are skipped.
+The operator ‘==’ has higher priority than the operator ‘||’
+So the following can be re-write as:
+if( num%3==0 || num%4==0 ) 		if( (num%3==0) || (num%4==0 ) 
+if~else statement is considered as a single set
+blocks written in if statements executes when the input is true but else blocks in ‘else’ statement executes.
+FORMAT:
+if(condition1)
+{
+	//executes if condition 1 satisfied
+}
+else if(condition 2)
+{
+	//executes if condition 2 satisfied
+}
+else if(condition 3)
+{
+	//executes if condition 3 satisfied
+}
+else
+{
+	//executes when none of conditions have met
+}
+
+if(num<0)
+	printf(“xxxxxxx. \n”);
+else if (num>0)
+	printf(“xxxxxxx. \n”);
+else
+	printf(“xxxxxxx. \n”);
+
+this can be written as:
+
+if(num<0)
+{
+	printf(“xxxxxxx. \n”);
+}
+else
+{
+	if (num>0)
+		printf(“xxxxxxx. \n”);
+	else
+		printf(“xxxxxxx. \n”);
+}
+
+
+Conditional Operator
+
+Eg)
+	(num1>num2) ? (num1) : (num2)
+Format)
+	(condition) ? (data1) : (data2)
+True=execute ‘data1’
+False=execute ‘data2’
