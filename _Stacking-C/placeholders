@@ -1,0 +1,10 @@
+\n : new line. to start a new line of text
+\t : tab, to hop over so many spaces
+\' : escape single quote
+\" : escape double quote
+\\ : display backspace character
+%d : integer number (whole)
+%s : string
+%f : floatin-point values
+%c : single characters
+%% : the percentage sign
