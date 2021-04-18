@@ -1,0 +1,25 @@
+Interrupt is used to set a task that has a higher priority in normal program flow. Once an interrupt occur the whole program ceases and handle the issue that interrupt ask to.
+Interrupt is a command for an event to occur immediately as soon as it is issued from the micro-controller
+
+There are two types of intterrupt:
+Hardware interrupt and Software interrupt
+
+Hardware interrupt: specific hardware can cause the hardware interrupt, a reserved interrupt signal line is connected directly to the CPU.
+Software interrupt: interrupts that occur through a kernel in a computer system with an operating system.
+
+Steps:
+1. Interrupt occured
+2. Stop an operation that is currently in progress
+3. Move into ISP(Interrupt Service Routine)
+4. Operate the task issued by the interrupt
+5. Get back to the progress and start again from where it stopped
+
+When an interrupt take place corresponding ISP is called. And there are three conditions to met:
+1. The global interrupt enable bit shall be set.
+2. Individual interrupt active bits for each interrupt shall be set.
+3. Conditions for interrupt generation shall be met.
+
+sei() : to allow global interrupt enable 'Set interrupt'
+cli() : to block globle intterrupt 'clear interrupt'
+
+There are priorities among interrupts, and low-number interrupts have high priorities.
