@@ -1,0 +1,3 @@
+The baud rate is the rate at which information is transferred in an communication channel.
+Baud rate is commonly used when discussing electronics that use serial communication.
+In the serial port context. "9600 Baud" means that the serial port is capable of transferring a maximum of 9600 bits per second.
