@@ -1,0 +1,35 @@
+CMD_START
+Start the simulation, this command needed to be called to “turn on” the robot
+
+CMD_CLOSE
+Clean up all the variable, disconnect the serial port for the next use and ”turn off” the robot
+
+CMD_ACT_LAT_*Direction*_*Distance*
+Handles lateral movements of the robot. User must specify the direction (0=backwards, or 1 = forwards) and distance value (in metres)
+
+CMD_ACT_ROT_*Direction*_*Angle*
+Rotate the robot by a specific angle. User must specify the direction and the angle. (0 = Counter Clockwise, 1 = Clockwise)
+
+CMD_SEN_ IR
+Return the IR sensor measurement from the simulation in String type, when out of range, the return value will be NaN
+
+CMD_SEN_ROT_*Angle*
+Adjust the angle of the sensor. 0° is where the robot is heading and increasing to 360 Counter-Clockwise
+
+CMD_SEN_CHECK
+Return the current angle of the sensor
+
+CMD_SEN_DIST
+Return the distance the robot has travelled (robot odometer)
+
+CMD_SEN_PING
+Ping the nearest goal, this function returns the distance to the nearest goal if it stays within 5 metre of the goal, otherwise return 0
+
+CMD_SEN_ID
+Identify which goal is nearby, only work if the robot is within 2 metre of the goal, return 1 or 2 depend on which goal is nearby, otherwise return 0
+
+CMD_SEN_GOAL
+Check what goal the robot achieved, if the robot has reached goal 1, this will return 1, if reached goal 2 will return 2, if have not achieved any goal, will return 0
+
+CMD_SEN_COLL
+Return the number of collisions between robot and the wall
