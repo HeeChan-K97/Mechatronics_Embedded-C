@@ -1,0 +1,81 @@
+#include <stdio.h>
+
+int main(void)
+{
+	//int age = 12; //변수와 그 변수의 이름, 정수 12(정수형 변수)
+	//printf("%d\n", age); //정수형 값을 콤마 뒤에 나오는 값을 순서대로 나타내게 하는것
+	//age = 13;
+	//printf("%d\n", age); //정수형 값을 콤마 뒤에 나오는 값을 순서대로 나타내게 하는것
+	//age는 integer로 이미 선언을 했기 때문에 추가적인 선언 없이 나타낸다.
+	//정의한 값에 따라서 출력값이 순서대로 나타나는 것을 알수있다.
+
+	//실수형 변수에 대한 예제
+	//float f = 46.5;
+	//printf("%.2f\n", f); //소수점 두번째 자리까지만 표시되는 실수
+	//double d = 4.428;
+	//printf("%.2lf\n", d); //소수점 두번째 자리에서 반올림하여 나타나는 실수
+
+	//const int YEAR = 2000;	//상수  not 변수
+	//printf("When were you born : %d\n", YEAR);
+
+	//printf
+	//int add = 3 + 7; //10 
+	//printf("3 + 7 = %d\n", add);
+	//printf("%d + %d = %d\n", 3, 7, 3 + 7); //괄호안에 수들이 차례로 들어간다. 어떤 사칙연산도 가능하다
+
+	//scanf:키보드 입력을 받아서 저장
+	//int input;
+	//printf("Put Integer : ");
+	//scanf_s("%d", &input); //input이라는 변수에 입력된 값을 저장하겠다
+	//printf("Entered input : %d\n", input);
+
+	//int a, b, c;
+	//printf("3개의 정수를 입력하세요 : ");
+	//scanf_s("%d %d %d", &a, &b, &c); //각 
+	//printf("첫번째 값: %d\n", a);
+	//printf("두번째 값: %d\n", b);
+	//printf("세번째 값: %d\n", c);
+
+	//char c = 'A'; //문자는 작은 따옴표, 문자열은 큰따옴표
+	//printf("%c\n", c);
+
+	//char str[256]; //문자를 저장하기 위한 변수를 256개 쭉 나열한다, 문자열. 띄어쓰기는 인식 되지 않는다.
+	//scanf_s("%s\n", str, sizeof(str)); //문자열을 작성하기 위해서는 & 표시 없이 작성, 다만 크기를 명시! sizeof 괄호안에 str을 넣음으로써 256개 이내의 문자만 넣겠다고 말해주는것
+	//printf("%s\n", str);
+
+	//프로젝트(경찰 조서 작성)
+	//물어볼 항목: 이름 나이 몸무게 키 범죄명
+
+	char name[30];
+	printf("이름이 뭐에요?    ");
+	scanf_s("%s", name, sizeof(name));
+
+	int age;
+	printf("나이는 어떻게 되시죠?    ");
+	scanf_s("%d", &age);
+
+	float weight;
+	printf("몸무게는 어떻게 되세요?    ");
+	scanf_s("%f", &weight);
+
+	double cm;
+	printf("키는 어떻게 되세요?    ");
+	scanf_s("%lf", &cm);
+
+	char crime[256];
+	printf("어떤 범죄를 저질러서 이곳에 오셨죠?    ");
+	scanf_s("%s", crime, sizeof(crime));
+
+	printf("\n\n조사결과\n\n");
+	printf("이름		: %s\n", name);
+	printf("나이		: %d\n", age);
+	printf("몸무게		: %f\n", weight);
+	printf("키			: %lf\n", cm);
+	printf("범죄사항	: %s\n", crime);
+
+
+
+
+
+	return(0);
+}
