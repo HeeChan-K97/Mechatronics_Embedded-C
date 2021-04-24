@@ -1,0 +1,54 @@
+#include <stdio.h>
+
+int main(void)
+{
+	//using ++
+
+/*	int a = 10;
+	printf("a = %d\n", a);
+	++a; *///++a, 앞에 있을때는 문장에서 ++동작을 먼저 수행하고 문장을 진행해라
+		 //a++, 앞에 문장을 수행하고 다음 문장으로 넘어 갈때 a에 1을 더하고 넘어가라
+	
+	//example
+	/*int b = 20;
+	printf("b = %d\n", ++b);
+	printf("b = %d\n", b++);
+	printf("b = %d\n", b);*/
+
+	//int i = 1;
+	//printf("Hi%d\n", i++); //1
+	//printf("Hi%d\n", i++); //2
+	//printf("Hi%d\n", i++); //3
+	//printf("Hi%d\n", i++); //4
+	//printf("Hi%d\n", i++); //5
+
+	//반복문
+	//for, while, do while
+
+	//for (선언; 조건; 증감){}
+	for (int i = 1; i<=10; i++)
+	{
+		printf("Hi%d\n", i); //for문에서 i가 1이라는 값을 선언하고 1을 집어넣는다, 조건이 맞으면 괄호안의 내용을 수행하라, 수행후에 증감/감소 하라.
+	}
+
+	//while
+	//while (조건) {}
+	int i = 1;
+	while (i <= 10)
+	{
+		printf("Hi%d\n", i); //여기에 i++을 넣어도 무관하다
+		i++; //증감
+	}
+	//진행되는 방식은 for문과 동일하다 선언->조건->증감, 조건을 넘으면 exit
+
+	//do while
+	//do{} while(조건);
+	int i = 1;
+
+	do {
+		printf("Hi%d\n", i++);
+	} 	while (i <= 10);
+  
+  return 0;
+  
+  }
