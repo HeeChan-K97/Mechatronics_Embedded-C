@@ -1,0 +1,293 @@
+//libraries
+#include <LiquidCrystal.h>
+
+//definitions
+#define btnRIGHT 0
+#define btnUP 1
+#define btnDOWN 2
+#define btnLEFT 3
+#define btnSELECT 4
+#define btnNONE 5
+
+int lcd_key = 0; // LCD실드로 입력된 버튼
+int ADCvalue = 0;
+int currentMode = 0; // 0:스타트, 1:메인, 2: 제어, 3:빙글, 4:벽타기
+
+bool buttonDelay = false; // 버튼 디바운스 체크
+
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
+int debouncerCount = 0; // 디바운스 카운트
+int blinkCounter = 0; // 모드선택 깜빡이 카운트
+int blinkCheck = 0; // 모드선택 깜빡여야하는지 확인
+
+int pos = 1; // 모드선택 포지션
+
+boolean isSweeping = false; // 스위핑 기능을 작동시켰는지 (작동버튼 누르면 true, 작동이 끝나면 false)
+boolean isWallFollowing = false; // 벽타기 기능이 작동중인지 (벽타기 모드로 넘어갈때 true, 중지 버튼을 누르면 false)
+boolean isSweeped = false; // 벽타기 실행 전 스위핑 끝냈는지 확인
+
+void setup() {
+  //interrupt - 1 ms timer 
+  TCCR0A = (1 << WGM01); //enable CTC mode (pg 143)
+  TCCR0B = (1 << CS02); //256 prescaler
+  OCR0A = 78; //ticks
+  TCNT0 = 0;
+  TIMSK0 = (1 << OCIE0A);
+  //ADC
+  ADMUX = (1 << REFS0); //AVcc
+  ADCSRA = (1 << ADEN) | (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2) | (1 << ADIE); //enable ADC, prescaler select, interrupt enable
+  DIDR0 = (1 << ADC0D);
+  ADC_Init();
+  //LCD
+  lcd.begin(16, 2); //sets the "coordinates" for the LCD screen
+  lcd.setCursor(0, 0);
+  lcd.print("SID:13006010");
+  lcd.setCursor(0, 1);
+  lcd.print("Main Menu");
+  Serial.begin(4800);
+  PrintMessage("CMD_START");  // Start the robot
+  sei(); //set external interrupts
+}
+
+int read_LCD_buttons() { //taken from exercise
+  if (ADCvalue > 1000) return btnNONE;
+  if (ADCvalue < 50) return btnRIGHT;
+  if (ADCvalue < 195) return btnUP;
+  if (ADCvalue < 380) return btnDOWN;
+  if (ADCvalue < 555) return btnLEFT;
+  if (ADCvalue < 790) return btnSELECT;
+  return btnNONE;
+}
+
+void ADC_Init() {
+  ADCSRA |= (1 << ADSC); //start conversion
+}
+
+void buttonLCD() { // 버튼이 눌렸을 때 동작을 구분(제어 모드 제외)
+  switch (lcd_key) {
+    case btnRIGHT: {
+        break;
+      }
+    case btnLEFT: {
+        break;
+      }
+    case btnUP: {
+        if (currentMode == 4) {
+          isWallFollowing = false;
+        }
+        break;
+      }
+    case btnDOWN: {
+        if (currentMode == 1) {
+          pos++;
+          if (pos > 3)pos = 1;
+        }
+        break;
+      }
+    case btnSELECT: {
+        modeChange();
+        break;
+      }
+    case btnNONE: {
+        break;
+      }
+  }
+}
+
+void modeChange() {  // 0:스타트, 1:메인, 2: 제어, 3:빙글, 4:벽타기
+  if (currentMode == 1) { // 메인 화면에서는 포지션에 따른 모드 변경
+    if (pos == 1) {
+      currentMode = 2;
+    }
+    else if (pos == 2) {
+      currentMode = 3;
+    }
+    else if (pos == 3) {
+      currentMode = 4;
+    }
+  }
+  else { // 스타트, 제어, 빙글, 벽타기 모드에서는 메인 화면으로 전환
+    currentMode = 1;
+    isSweeped = false;
+  }
+
+  switch (currentMode) { // 모드가 전환될 때 lcd화면 표시
+    case 1:
+      lcd.clear();
+      lcd.print("Mode Select");
+      lcd.setCursor(0, 1);
+      lcd.print("Ctrl Sweep WF");
+      break;
+    case 2:
+      lcd.clear();
+      lcd.setCursor(0, 1);
+      lcd.print("Control Mode");
+      break;
+    case 3:
+      lcd.clear();
+      lcd.setCursor(0, 1);
+      lcd.print("Sweep Mode");
+      break;
+    case 4:
+      lcd.clear();
+      lcd.setCursor(0, 1);
+      lcd.print("Wall Follow Mode");
+      isWallFollowing = true;
+      break;
+  }
+}
+
+ISR(ADC_vect) { // 여러 개의 ADC를 받아야 할 때 사용 (이 프로젝트에서는 ADCvalue를 읽어오는 데에만 사용)
+  switch (ADMUX) {
+    case 0x40: { //0b1000000
+        ADCvalue = ADC;
+        ADC_Init();
+        break;
+      }
+    default: {
+        break;
+      }
+  }
+}
+
+ISR(TIMER0_COMPA_vect) { //interrupts - think of it like juggling or a loop, you'd want this to happen alongside everything else
+  debouncerCount++; //debouncer: a button delay in between presses (250 ms, could be any number)
+  if ((debouncerCount >= 250) && (ADCvalue <= 1000) && (buttonDelay == true)) { // 버튼 재인식 시간 조절(0.25초)
+    lcd_key = read_LCD_buttons();
+    buttonLCD();
+    buttonDelay = false;
+    debouncerCount = 0;
+  }
+
+  blinkCounter++; //after 500 ms show Debug mode Select Blink
+  if ((blinkCounter >= 500) && currentMode == 1) {
+    blinkCheck++;
+    if (blinkCheck >= 2)blinkCheck = 0;
+    lcd.setCursor(0, 1);
+    if (currentMode == 1) {
+      if (blinkCheck == 0) lcd.print("Ctrl Sweep WF");
+      else {
+        if (pos == 1)lcd.print("     Sweep WF");
+        if (pos == 2)lcd.print("Ctrl       WF");
+        if (pos == 3)lcd.print("Ctrl Sweep   ");
+      }
+    }
+    blinkCounter = 0;
+  }
+}
+
+void PrintMessage(String message) { // 매트랩 프로그램에 Serial 메시지 전송(전송할 메시지에 캐리지 리턴, 뉴 라인 더해서 전송)
+  Serial.print(message);
+  Serial.write(13); //carriage return character (ASCII 13, or '\r')
+  Serial.write(10); //newline character (ASCII 10, or '\n')
+}
+
+void loop() {
+  //  Serial.println(ADCvalue); //for some reason the code works when this is here. doesn't actually start the serial monitor
+  //  Serial.println(currentMode);
+  if ((ADCvalue <= 1000) && (buttonDelay == false)) { //if a button is being pressed then read what button is being pressed (in interrupt)
+    buttonDelay = true;
+  }
+
+  if (currentMode == 2 && buttonDelay == false) { // 제어 모드에 들어갔고, 버튼이 디바운스 되어있으면 버튼 인식
+    lcd_key = read_LCD_buttons(); // 눌린 버튼 확인
+    switch (lcd_key) { // 눌린 버튼에 따른 제어
+      case btnRIGHT: {
+          PrintMessage("CMD_ACT_ROT_1_5 "); // CW로 5도 회전
+          break;
+        }
+      case btnLEFT: {
+          PrintMessage("CMD_ACT_ROT_0_5 "); // CCW로 5도 회전
+          break;
+        }
+      case btnUP: {
+          PrintMessage("CMD_ACT_LAT_1_1 "); // 앞으로 1만큼 이동
+          break;
+        }
+      case btnDOWN: {
+          PrintMessage("CMD_ACT_LAT_0_1 "); // 뒤로 1만큼 이동
+          break;
+        }
+      case btnSELECT: {
+          break;
+        }
+      case btnNONE: {
+          break;
+        }
+    }
+  }
+  if (currentMode == 3 && buttonDelay == false) { // 스위핑 모드에서 버튼이 디바운스 되어있으면 버튼 인식
+    lcd_key = read_LCD_buttons(); // 눌린 버튼 확인
+    switch (lcd_key) { // 눌린 버튼에 따른 제어
+      case btnUP: {
+          isSweeping = true; // 스위핑 작동 시작
+          break;
+        }
+    }
+  }
+  if (currentMode == 3 && isSweeping) { // 스위핑 모드에서 스위핑 작동시작 상태가 되면
+    float minData = 999.99; // 최솟값을 999.99라고 가정
+    int minAngle = 0; // 그 시점의 각도를 저장
+    for (int i = 0; i < 360; i++) { // 0도~359도를 확인
+      PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+      Serial.setTimeout(0); // 빠른 응답속도를 위해 타임아웃 시간 0으로 설정
+      String incomingByte = Serial.readString(); // Read the incoming value
+      float data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+      Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+      if (data > 0.0) { // 데이터가 0.0보다 큰 경우(NAN이 아니다)
+        if (minData > data) { // 기존에 저장한 최솟값과 비교하여 더 작은값이 발견되면
+          minData = data; // 그 값과
+          minAngle = i; // 그 각도를 저장
+          Serial.println("minAngle : " + String(minAngle)); // 갱신한 각도를 확인 // 이 부분도 코멘트처리 혹은 삭제해도 상관없는 부분
+        }
+      }
+      PrintMessage("CMD_ACT_ROT_1_1 "); // 시계방향으로 1도 회전
+    }
+
+    for (int i = 360; i > minAngle; i--) { // 최솟값이 측정되었던 각도를 향해 반시계방향으로 회전
+      PrintMessage("CMD_ACT_ROT_0_1");
+      Serial.println(i); // 보고있는 각도를 표시 // 이 부분도 코멘트처리 혹은 삭제해도 상관없는 부분
+    }
+    isSweeping = false; // 스위핑이 끝났기 때문에 스위핑 할 필요가 없다고 변경
+  }
+  if (currentMode == 4 && isWallFollowing) { // 벽타기 모드에서 벽타기를 실행중인 경우(모드 진입시 자동으로 실행되고, 중지 버튼으로 중지시킨다)
+    if (!isSweeped) { // 가까운 벽을 찾지 않은 상태이면 스위핑 기능을 통해 가까운 벽을 찾음(동일한 내용, 코멘트처리 혹은 삭제해도 상관없는 부분이 있는 것도 동일)
+      float minData = 999.99;
+      int minAngle = 0;
+      for (int i = 0; i < 360; i++) {
+        PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+        Serial.setTimeout(0);
+        String incomingByte = Serial.readString(); // Read the incoming value
+        float data = incomingByte.toFloat();
+        Serial.println(data);
+        if (data > 0.0) {
+          if (minData > data) {
+            minData = data;
+            minAngle = i;
+            Serial.println("minAngle : " + String(minAngle));
+          }
+        }
+        PrintMessage("CMD_ACT_ROT_1_1 ");
+      }
+
+      for (int i = 360; i > minAngle; i--) {
+        PrintMessage("CMD_ACT_ROT_0_1");
+        Serial.println(i);
+      }
+      isSweeped = true;
+    }
+    else { // 가까운 벽을 찾고난 뒤
+      PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+      Serial.setTimeout(0);
+      String incomingByte = Serial.readString(); // Read the incoming value
+      float data = incomingByte.toFloat();
+      if (data == 0 || data > 2.3) { // 0거리가 측정(NAN측정) 또는 벽에서 2.3이상의 거리가 떨어져있으면
+        PrintMessage("CMD_ACT_LAT_1_0.5 "); // 앞으로 0.5만큼 이동
+      }
+      else { // 벽에 가까워지면
+        PrintMessage("CMD_ACT_ROT_1_90 "); // 시계방향으로 90도 회전
+      }
+    }
+  }
+}
