@@ -1,0 +1,61 @@
+PWM(Pulse Width Modulation)
+모터제어나 전압제어에 많이 사용하는 방식으로써, 펄스 폭을 전송하고자 하는 신호에 따라 변화시키는 변조방식.
+
+타이머에서 사용가능한 4가지 PWM모드:
+1. CTC(Clear Time on Compare) Mode
+2. Fast PWM Mode
+3. Phase Correct PWM Mode
+4. Phase and Frequency Correct PWM Mode(16bit only)
+
+16Bit Registers
+-> Timer/Counter(TCNTn)
+-> Output Compare Register(OCRnA/B/C)
+-> Input Capture Register(ICRn)
+
+8Bit Register
+-> Timer/Counter Control Register(TCCRnA/B/C)
+-> Timer Interrupt Flag Register(TIFR)
+-> Extended Timer Interrupt Flag Register(ETIFR)
+-> Timer Interrupt Mask Register(TIMSK)
+-> Extended Timer Interrupt Mask Register(ETIMSK)
+
+----------TCCR0A----------
+
+Bits 7:6 = 이 비트는 OC0A의 행동방식을 제어하는 역할을 합니다. 만약 한개 또는 두개의 비트가 설정되었을때, 
+미리 설정되어 동작하고 있는 같은 자리의 핀의 작동을 중단시키고 OC0A의 작업을 우선적으로 실행합니다. 하지만, OC0A에 해당하는 DDR의 핀을 제대로
+설정해 주어야 원하는 출력 드라이버를 작동시킬 수 있습니다.
+OC0A의 핀이 연결되어 있을 때, COM0A1:0 비트들의 기능은 WGM02:0의 비트 세팅이 어떻게 되었느냐에 따라 달라집니다.
+(해당 비트 세팅은 데이터시트 참고)
+
+Bits 1:0 - WGM01:0: Waveform Generation Mode = TCCR0B에 있는 WGM02비트와 호환되어 사용되어지는 이 비트는 카운터의 카운팅 순서, 최댓값(TOP)의 근원, 
+그리고 어떤 유형의 파형생성기가 사용 되는지를 제어한다. 
+MAX: 0xFF
+BOTTOM: 0x00
+(비트 설명은 데이터시트 테이블15-8 참고)
+
+
+-----------TCCR0B-----------
+
+Bit 7 - FOC0A: Force Output Compare A = FOC0A비트는 특별히 non-PWM 모드의 WGM비트가 설정되어 있을때만 작동된다. 
+However, for ensuring compatibility with future devices, this bit must be set to zero when TCCR0B is written
+when operating in PWM mode. When writing a logical one to the FOC0A bit, an immediate Compare Match is
+forced on the Waveform Generation unit. The OC0A output is changed according to its COM0A1:0 bits setting.
+Note that the FOC0A bit is implemented as a strobe. Therefore it is the value present in the COM0A1:0 bits that
+determines the effect of the forced compare.
+A FOC0A strobe will not generate any interrupt, nor will it clear the timer in CTC mode using OCR0A as TOP.
+The FOC0A bit is always read as zero.
+• Bit 6 – FOC0B: Force Output Compare B
+The FOC0B bit is only active when the WGM bits specify a non-PWM mode.
+However, for ensuring compatibility with future devices, this bit must be set to zero when TCCR0B is written
+when operating in PWM mode. When writing a logical one to the FOC0B bit, an immediate Compare Match is
+forced on the Waveform Generation unit. The OC0B output is changed according to its COM0B1:0 bits setting.
+Note that the FOC0B bit is implemented as a strobe. Therefore it is the value present in the COM0B1:0 bits that
+determines the effect of the forced compare.
+A FOC0B strobe will not generate any interrupt, nor will it clear the timer in CTC mode using OCR0B as TOP.
+The FOC0B bit is always read as zero.
+• Bits 5:4 – Reserved
+These bits are reserved bits in the ATmega48A/PA/88A/PA/168A/PA/328/P and will always read as zero.
+• Bit 3 – WGM02: Waveform Generation Mode
+See the description in the ”TCCR0A – Timer/Counter Control Register A” on page 113.
+• Bits 2:0 – CS02:0: Clock Select
+The three Clock Select bits select the clock source to be used by the Timer/Counter.
