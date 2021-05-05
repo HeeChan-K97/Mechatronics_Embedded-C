@@ -1,0 +1,39 @@
+ATMega328P-Serial Interface
+
+--The Arduino UNO houses three serial modules--
+* SPI- Serial Peripheral interface
+-> Four pins/lines, Master/Slave configuration, Faster
+* USART- Universal Synchronous Asynchronous Receiver Transceiver 
+-> Two pins/lines, simple data transfer, slower overall.
+-> Can run USART in SPI mode
+* TWI(I2C)- Two Wire Serial Interface
+-> Two pins/lines, Master/Slave, no baud rate requirements
+
+SPI:
+
+Pins: MISO (Master In Slave Out), MOSI (Master Out Slave In), SCK (Serial Clock), SS (Slave Select)
+Synchronous Serial Communication optimal for slaving multiple peripheral devices or microcontrollers to a singular master microcontroller.
+A Serial Clock line is used to synchronize communication between devices.
+
+USART:
+
+Pins: TX(transmit), and RX(receive). XCKn(transfer clock) for synchronous.
+A serial protocol that can operate both synchronously and asynchronously. Can operate in SPI logic.
+Both devices will need to agree on the data protocol for data size, structure, and transmission speed. This will involve configure both devices separately to communicate together.
+Baud rate is a term used on both device ends to measure the transmission speed. Both devices need to match baud rate in order to communicate. Baud rate is the measure of signal “change” per second or the amount of symbols it can send per second. 
+
+TWI-I2C:
+
+Pins: SDA (data line), and SCL (clock line).
+A synchronous protocol which can be used with multiple slaves.
+Operates in 7-bit address can support up to 128 devices while 10-bit is 1024 devices.
+All data will be transmitted through the SDA line while the SCL line is the master clock.
+All slave devices will have either a 7 bit or 10 bit address to identify itself.
+
+Bit Banging:
+
+Bit banging is the procedure of using software to emulate serial protocols instead of any dedicated hardware.
+This is useful when you do not have the necessary/compatible hardware available for serial communication.
+This is can be done with the I/O pins on the Arduino. You can allocate various pins to acts as pins for serial protocols e.g. SPI(MISO, MOSI, SCK, SS) or USART(TX, RX) pins.
+Arduino’s SoftwareSerial library allows digital pins to be configured as UART TX and RX pins.
+Overall this method is less reliable, slower, and consumes more power compared to dedicated hardware.
