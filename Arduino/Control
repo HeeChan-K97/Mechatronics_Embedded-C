@@ -1,0 +1,7 @@
+----------Definition of transient response----------
+Delay time: the time required for the respond to reach the half of the final value
+Rise time: time required for the respond to rise from 10% - 90%
+Peak time: time required for the respond to reach the first peak of overshoot
+Maximum overshoot: maximum peak value of the response curve measured from unity
+Settling time: the time required for the response to reach and stay within the final value
+Steady-state error: is the difference between the input and output for a particular input as time goes to infinity
