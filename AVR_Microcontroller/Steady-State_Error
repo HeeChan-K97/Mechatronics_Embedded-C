@@ -1,0 +1,20 @@
+Control System:
+An interconnection of components forming a system configuration that will provide a desired system response.
+The study of control provides us with a process for analysing and understanding the behaviour of a system given some input.
+It also introduces methods for achieving the desired system response.
+ 
+Open loop control:
+•	User adjusts input time
+•	System does not reject changes in component characteristics
+Closed loop control:
+•	A closed loop control system includes feedback
+•	This system is also known as feedback control
+PID controller
+•	Proportional(P) feedback can reduce error responses to disturbances but may still allow a non-zero steady-state error
+•	Integral(I) feedback can eliminate steady-state error
+: the integral power which is basically integrating the error and then multiplied by again as you know because you are integrating an error over the time the error is going to be high and when you are multiplying it by again even higher and that can be used to control so it can really get rid of the steady-state errors in the long run 
+•	A derivative(D) term can improve dynamic response
+Proportional controller
+•	For a proportional controller, there will always be a steady-state error
+•	Increasing K will decrease the magnitude of the steady-state error
+•	This may adversely affect other performance, in particular overshoot
