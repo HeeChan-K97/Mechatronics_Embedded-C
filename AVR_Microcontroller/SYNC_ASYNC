@@ -1,0 +1,9 @@
+Synchronous
+
+Sender and Receiver are sync to a master clock. Data transfer is based on that clock
+Faster data transfer, but requires a clock signal line for both the transmitter and receiver
+
+Asynchronous
+
+Sender provides a start and stop signal during data transfer
+Slower data transfer but removes the need for a clock signal
