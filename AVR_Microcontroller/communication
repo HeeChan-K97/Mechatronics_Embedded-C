@@ -1,0 +1,25 @@
+Parallel Transmission
+
+Parallel Transmission
+The sending of multiple bits (usually 8 bits) simultaneously and synchronously (Synchronized to a single clock) through different lines on a data bus.
+This allows you to send byte by byte (8 bit) or larger amounts of data by a single clock pulse.
+Advantages
+Data transmission is generally faster.
+Very useful for situations requiring fast data transmission at a short distance (<6m sometime can be longer). Often used inside computers or computer to printer connections.
+Disadvantages
+Each line is essentially a wire or cable. This means transmitting 8 bits would require eight wires/cables. Transmitting 16 bits would require more.
+Transmission is highly dependent on the bits being transmitted in sync (all 8 bits arriving at the same time).  If the data bits are out of sync, it will corrupt the overall transmitted data.
+
+
+Serial Transmission
+
+Serial Transmission
+The sending of a single bit in sequence (a specific order) to form a byte (8 bit) or data sequence.
+Data can be transmitted synchronously (synchronized to a clock) or asynchronously (bits are transmitted with start-stop sequences at the beginning and end of data)
+Advantages
+Data is less prone to error and noise. Overall more reliable.
+Useful for small sized data being transferred over a long distance.
+Less cables. Often cables can also be thinner, fibre optic cables are useful for data transmission speed.
+Disadvantages
+Slower than parallel port due to only sending 1 bit instead of n(>1) bits. 
+A lot more abstract to operate
