@@ -1,0 +1,213 @@
+#include <LiquidCrystal.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
+
+//LCD and buttons
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+int btn_key;                                        //records button selected
+#define SID 13214489
+#define BTNRIGHT  0
+#define BTNUP     1
+#define BTNDOWN   2
+#define BTNLEFT   3
+#define BTNSELECT 4
+#define BTNNONE   5
+
+
+//Main menu
+int menu = 0;
+char menuOptions[4][13] = {"MAIN MENU",
+                           "Control",
+                           "Sweep",
+                           "Wall Follow"
+                          };
+
+
+
+//Timer and ADC
+volatile long unsigned int milliseconds = 0;
+
+//IR sensor
+volatile unsigned long rotatedPosition = 0, closestAngle;
+//array variables
+String distanceReadings[11], medianDistance;
+//closest distance variable, sweep mode
+String closestDistance, incomingByte;
+char sensorRotateCmd[] = "CMD_SEN_ROT_", stringRotatedPosition[100];
+
+
+void setup()
+{
+  lcd.begin(16, 2);                                            //initialise LCD, must always be done or LCD will be unpredictable
+  Serial.begin(9600);
+  set_up_timer();                                              //initialise, timer, adc and ports
+  set_up_adc();
+
+  lcd.setCursor(0, 1);
+  lcd.print("IR Testing");
+  lcd.setCursor(0, 0);
+  PrintMessage("CMD_START");
+}
+
+void loop()
+{
+
+
+  btn_key = read_lcd_buttons();
+  my_delay(1000);
+
+  switch (btn_key)
+  {
+    case BTNLEFT:
+      my_delay(700);
+
+      PrintMessage("CMD_ACT_LAT_1_0.1");  //1=move forward, 0.1m
+      PrintMessage("CMD_ACT_ROT_0_10"); //0==rotate CCW, 10 degrees
+
+      lcd.setCursor(5, 0);
+      lcd.print("   ");
+
+      lcd.setCursor(0, 0);
+      lcd.print("LEFT");
+      break;
+
+    case BTNRIGHT:
+      my_delay(700);
+
+      PrintMessage("CMD_ACT_LAT_1_0.1");  //1=move forward, 0.1m
+      PrintMessage("CMD_ACT_ROT_1_10"); //1=rotate CW, 10 degrees
+
+      lcd.setCursor(0, 0);
+      lcd.print("RIGHT");
+      break;
+
+    case BTNUP:
+      my_delay(700);
+      PrintMessage("CMD_ACT_LAT_1_0.1"); //move forward, 0.1
+      lcd.setCursor(0, 0);
+      lcd.print("UP");
+      break;
+
+    case BTNDOWN:
+      my_delay(700);
+      PrintMessage("CMD_ACT_LAT_0_0.1"); //move backward, 0.1
+      lcd.setCursor(0, 0);
+      lcd.print("DOWN");
+      break;
+
+
+    case BTNSELECT:
+      my_delay(700);
+
+      //Reading IR
+      /*PrintMessage("CMD_SEN_IR");
+        String incomingByte = Serial.readString(); // Read the incoming value
+
+        lcd.setCursor(3,0);
+        lcd.print("   ");
+        lcd.setCursor(0, 0);
+        lcd.print("iB:");
+        lcd.print(incomingByte);*/
+
+      //Finding median reading from IR, implements three other void functions
+      /*for (int x = 0; x < 11; x++)
+        {
+        PrintMessage("CMD_SEN_IR");
+        distanceReadings[x] = Serial.readString(); //read incoming value from sensor
+        }
+
+        sort_ascending(distanceReadings);
+        medianDistance = find_median(distanceReadings);
+      */
+
+      //sweep mode experiment: without accounting for noise
+      PrintMessage("CMD_SEN_IR");//read IR sensor at 0 degree position
+      incomingByte = Serial.readString();//store this as closest distance value
+      closestDistance = incomingByte;
+      for (int rotation = 0; rotation < 36; rotation++)
+      {
+        rotatedPosition = rotatedPosition + 10;
+        // PrintMessage("CMD_SEN_ROT_rotatedPosition");//does not work due to MatLab cannot realise that rotatedPosition is a value, creates error in MatLab
+
+        //Using str functions to try and print a changing changing angle value
+        /*itoa(rotatedPosition,stringRotatedPosition,10);//convert rotatedPosition into stringRoatedPosition, keep in decimal values (hence the "10") => itoa(needs converting, store in new char variable, hexa/decimal=10/binary)
+          strcat(sensorRotateCmd, stringRotatedPosition);//copy stringRotatedPosition to the end of sensorRotateCmd)
+
+          PrintMessage(sensorRotateCmd);
+          sensorRotateCmd="CMD_SEN_ROT_";//reset this to clear the previous strcat*/
+
+        rotate_sensor();
+
+        delay(500);
+        PrintMessage("CMD_SEN_IR"); //scan from IR sensor
+        incomingByte = Serial.readString(); //get IR sensor reading
+        if (closestDistance > incomingByte) //store IR sensor reading if its the smallest variable
+        {
+          closestDistance = incomingByte; //store newest value of IR
+          closestAngle = rotatedPosition; //store position of IR
+        }
+        ///*else if(incomingByte ==NaN)
+          {
+          closestDistance=closestDistance;//makes sure that NaN isn't read as the smallest value and change closestDistance
+          }//*/
+        //neglect reading for NaN
+
+      }
+      //reset variables
+      rotatedPosition = 0;
+      
+      //Debugging
+      lcd.setCursor(0, 0);
+      lcd.print(closestDistance);
+      lcd.print(" ");
+      lcd.print(closestAngle);
+
+      //rotate motor CCW by storing value of sensor angle at the cloest distance into the rotate motor command, sensor value rotates CW, therefore 360-___ is the amount the motor needs to rotate
+      rotate_motor();
+      break;
+  }
+}
+
+//median functions
+//arranging array to ascending order
+/*https://www.tutorialspoint.com/learn_c_by_examples/median_program_in_c.htm
+   nested loop: each element is compated to all the elements below it
+    when element is greater than the element present below it, then they are interchanged
+*/
+
+void swap(String *p, String *q)
+{
+  String t;                                       //declare a replacement variable
+  t = *p;                                         //the value of p is stored in t
+  * p = *q;                                       //value in p is replaced by value in q
+  * q = t;                                        //finally the value  in q is replaced by value in t (which was previously p)
+}
+
+void sort_ascending(String distanceReadings[])
+{
+  int x = 0, y = 0;
+  String a;
+
+  for (x = 0; x < 11; x++)
+  {
+    for (y = x + 1; y < 11; y++)
+    {
+      if (distanceReadings[x] > distanceReadings[y])
+      {
+        swap(&distanceReadings[x], &distanceReadings[y]);
+      }
+    }
+  }
+
+}
+
+//finding median
+String find_median(String distanceReadings[])
+{
+  String median;
+  median = distanceReadings[11 / 2];
+  return median;
+}
