@@ -1,0 +1,42 @@
+int incomingByte;
+int byteArray[8];
+int arrayIndex = 0;
+char character;
+
+void setup() { //Set up serial communication between Arduino and PC
+  Serial.begin(9600);
+  Serial.print("Hi please send a message\n");
+}
+
+void loop() {
+  if (Serial.available()) { //Check for incoming data----serial, 컴퓨터에 들어온 data가 있는지 확인하고
+    incomingByte = Serial.read(); //Read incoming byte//있다면 serial.read(), 읽고 그 data를 incomingByte로 저장하라
+    if (arrayIndex < sizeof(byteArray) / 2) { //만약 arrayIndex가 sizeof(byteArray)/2, 8byte 보다 작다면
+      byteArray[arrayIndex] = incomingByte; //Store incoming byte in array//incomingByte를 arrayIndex에 저장해라
+      arrayIndex++; //Update array index for next character//저장이 됐으면 다음 data는 0에서 1을 증가시킨 1에 저장해라(최대 8개까지 가능)
+    }
+
+    if (incomingByte == 10) { //If newline character received start printing DECIMALS
+      Serial.print("Decimals Received: ");
+      for (int i = 0; i < arrayIndex; i++) { // Iterate through array
+        Serial.print(byteArray[i], DEC); // Print byte in decimal form
+        Serial.print(" ");
+      }
+      Serial.print("\n");//위에 for loop 이 끝나면 한줄 띄고 
+      arrayIndex = 0;//arrayIndex를 0으로 비워서 다음 새로운 데이터가 들어올수있게 만드는 것
+      memset(byteArray, 0, sizeof(byteArray)); //Clear array data
+    }
+
+    if (incomingByte == 13) { //If carriage return character received start printing ASCII
+      Serial.print("ASCII Form Data: ");
+      for (int i = 0; i < arrayIndex; i++) { // Iterate through array
+        character = (char) byteArray[i]; // Convert byte into character
+        Serial.print(character);
+      }
+      Serial.print("\n"); //위에 for loop 이 끝나면 한줄 띄고 
+      arrayIndex = 0; //arrayIndex를 0으로 비워서 다음 새로운 데이터가 들어올수있게 만드는 것
+      memset(byteArray, 0, sizeof(byteArray)); //Clear array data using memset
+    }
+  }
+
+}
