@@ -1,0 +1,10 @@
+The function std::swap() is a built-in function in the C++ Standard Template Library (STL) which swaps the value of two variables.
+
+Syntax:
+
+swap(a, b)
+Parameters: The function accepts two mandatory parameters a and b which are to be swapped. The parameters can be of any data type.
+
+Return Value: The function does not return anything, it swaps the values of the two variables.
+
+Programs below illustrate the swap() function:
