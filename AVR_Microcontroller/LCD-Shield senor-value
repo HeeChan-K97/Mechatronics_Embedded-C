@@ -3,3 +3,10 @@ BtnDOWN = 1.25V = 255.75
 BtnLEFT = 1.99V = 407.154
 BtnRIGHT = 0V = 0
 BtnSELECT = 3.12V = 638.352
+
+
+  if (ADCvalue <= 0) return btnRIGHT;
+  if (ADCvalue <= 100) && (ADCvalue >=98)) return btnUP;
+  if (ADCvalue <= 257) && (ADCvalue >=255))  return btnDOWN;
+  if (ADCvalue <= 410) && (ADCvalue >=407))  return btnLEFT;
+  if (ADCvalue <= 640) && (ADCvalue >=638))  return btnSELECT;
