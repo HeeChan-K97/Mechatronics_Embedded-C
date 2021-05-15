@@ -1,0 +1,54 @@
+if (currentMode == 3 && isSweeping) { // 스위핑 모드에서 스위핑 작동시작 상태가 되면
+    float minData = 999.99; // 최솟값을 999.99라고 가정
+    int minAngle = 0; // 그 시점의 각도를 저장
+    for (int i = 0; i < 360; i += 5) { // 0도~355도를 확인
+      //      float sum = 0.0;
+      //      int dataCount = 0;
+      float dataArray[11];
+      for (int j = 0; j < 11; j++) {
+        PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+        my_delay(10);
+        //        Serial.setTimeout(0); // 빠른 응답속도를 위해 타임아웃 시간 0으로 설정(?)
+        String incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+        my_delay(10);
+        float data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+        Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+        dataArray[j] = data;
+        //        if (data > 0.0) { // 데이터가 0.0보다 큰 경우(NAN이 아니다)
+        //          sum += data;
+        //          dataCount++;
+        //        }
+      }
+
+      for (int j = 0; j < 11; j++) {
+        float minData = dataArray[j];
+        int minIndex = j;
+        for (int k = j; k < 11; k++) {
+          if (minData > dataArray[k]) {
+            minIndex = k;
+          }
+        }
+        float temp = dataArray[j];
+        dataArray[j] = dataArray[minIndex];
+        dataArray[minIndex] = temp;
+      }
+      float avg = (dataArray[4] + dataArray[5] + dataArray[6]) / 3;
+
+      //      float avg = sum / dataCount;
+      if (avg > 0.0) {
+        if (minData > avg) { // 기존에 저장한 최솟값과 비교하여 더 작은값이 발견되면
+          minData = avg; // 그 값과
+          minAngle = i; // 그 각도를 저장
+          Serial.println("minAngle : " + String(minAngle)); // 갱신한 각도를 확인 // 이 부분도 코멘트처리 혹은 삭제해도 상관없는 부분
+        }
+      }
+      PrintMessage("CMD_SEN_ROT_" + String(360 - i - 5)); // 시계방향으로 5도 회전
+      my_delay(10);
+    }
+
+    for (int i = 360; i > minAngle; i -= 5) { // 최솟값이 측정되었던 각도를 향해 5도씩 반시계방향으로 회전
+      PrintMessage("CMD_ACT_ROT_0_5");
+      Serial.println(i - 5); // 보고있는 각도를 표시 // 이 부분도 코멘트처리 혹은 삭제해도 상관없는 부분
+    }
+    isSweeping = false; // 스위핑이 끝났기 때문에 스위핑 할 필요가 없다고 변경
+  }
