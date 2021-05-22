@@ -1,0 +1,31 @@
+NaN: Not a Number which refers to a value that cannot be defined.
+
+It is a special floating-point value and cannot be converted to any other type than float.
+None and NaN sound similar, look similar but are actually quite different. 
+None is a Python internal type which can be considered as the equivalent of NULL. 
+The None keyword is used to define a null value, or no value at all. None is not the same as 0, False, or an empty string. 
+It is a datatype of its own (NoneType) and only None can be … None.
+
+NaN cannot be equal to itself because NaN is the result of a failure, but that failure can happen in multiple ways. 
+The result of one failure cannot be equal to the result of any other failure and unknown values cannot be equal to each other.
+
+/**/The content of NaN is never equal to the content of another NaN.
+
+Equality Vs Identity
+
+Equality: 
+num = 1
+num2 = 1
+num == num2 
+
+Identity:
+import numpy as np
+one = np.nan
+two = np.nan
+one is two
+
+np.nan is np.nan is True and one is two is also True.
+If you check the id of one and two using id(one) and id(two) , the same id will be displayed.
+
+Nan values can often cause errors (more specifically TypeErrors) that will involve their type ‘float’. 
+The error message can be surprising, especially when you believe that your data has absolutely no float.
