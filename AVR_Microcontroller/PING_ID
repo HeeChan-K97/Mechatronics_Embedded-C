@@ -1,0 +1,30 @@
+  PrintMessage("CMD_SEN_ROT_0");
+  my_delay(10);
+  PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+  my_delay(10);
+  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  pingDistance = data;
+
+  if (pingDistance == 0.00) { // 주변에서 Goal 검색이 안됨(5미터 보다 멀리 있음)
+    // 계속 이동
+    if (forwardDistance <= 2.3) {
+      PrintMessage("CMD_ACT_LAT_0_0.5 "); // 뒤로 0.5만큼 이동
+      my_delay(10);
+
+      PrintMessage("CMD_ACT_ROT_0_90 "); // 반시계방향으로 90도 회전
+      my_delay(10);
+    }
+    else {
+      PrintMessage("CMD_ACT_LAT_1_0.5 "); // 앞으로 0.5만큼 이동
+      my_delay(10);
+    }
+  }
+  else if (pingDistance <= 2.00) {
+    PrintMessage("CMD_SEN_ID");        // Query the sensor reading
+    my_delay(10);
+    incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+    my_delay(10);
+    whatGoal = incomingByte.toInt();
