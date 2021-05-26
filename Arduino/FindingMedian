@@ -1,0 +1,34 @@
+void swap(String *p, String *q) //used for sorting an array into ascending order
+{
+  String t;                                       //declare a replacement variable
+  t = *p;                                         //the value of p is stored in t
+  * p = *q;                                       //value in p is replaced by value in q
+  * q = t;                                        //finally the value  in q is replaced by value in t (which was previously p)
+}
+
+void sort_ascending(String distanceReadings[]) //used for finding the median of an array by first sorting it into asceding order using this function
+{
+  int x = 0, y = 0; //x and y are the position of the values in the array, not the values themselves, they are used to compare the first value then the next value
+  String a;
+
+  for (x = 0; x < arrDRSize; x++)
+  {
+    for (y = x + 1; y < arrDRSize; y++)
+    {
+      if (distanceReadings[x] > distanceReadings[y])//if the current variable (y) is less than previous variable (x) then swap their positions
+      {
+        swap(&distanceReadings[x], &distanceReadings[y]);
+      }
+    }
+  }
+
+}
+
+//finding median
+String find_median(String distanceReadings[])//input an array which has been organised in ascending order
+{
+  String median;
+  median = distanceReadings[(arrDRSize-1)/2];//since all my arrays have 11 values, then the median will be 6 but array starts at 0 therefore 5, this function can be more flexible by having two inputs "String find_media (*string, *int), where int
+  //is the array size
+  return median;
+}
