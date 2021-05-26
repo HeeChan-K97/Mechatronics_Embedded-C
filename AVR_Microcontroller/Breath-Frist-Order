@@ -7,3 +7,4 @@ This non-recursive implementation is similar to the non-recursive implementation
 it uses a queue (First In First Out) instead of a stack and
 it checks whether a vertex has been discovered before enqueueing the vertex rather than delaying this check until the vertex is dequeued from the queue.
 
+From: https://en.wikipedia.org/wiki/Breadth-first_search
