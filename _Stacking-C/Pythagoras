@@ -1,0 +1,9 @@
+float rDistance = sqrt(pow(x, 2) + pow(y, 2));
+    float theta = asin(y / rDistance);
+    const double pi = 3.1415926535897932384;
+    float degree = theta * (180 / pi); //changing radian to degree
+
+    PrintMessage("CMD_ACT_ROT_1_" + String(90 - degree));
+    my_delay(10);
+    PrintMessage("CMD_ACT_LAT_1_" + String(rDistance));
+    my_delay(10);
