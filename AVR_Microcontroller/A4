@@ -1,0 +1,853 @@
+#include <LiquidCrystal.h>
+
+//definitions
+#define btnRIGHT 0
+#define btnUP 1
+#define btnDOWN 2
+#define btnLEFT 3
+#define btnSELECT 4
+#define btnNONE 5
+
+int lcd_key = 0; // send signal to LCDshield
+int ADCvalue = 0;
+
+int seconds = 0;
+int minutes = 0;
+
+bool buttonDelay = false; // check for button debounce
+
+int debouncerCount = 0; // debounce count
+int timerCount = 0;
+
+bool isPlaying = false;
+
+bool isSweeped = false;
+
+boolean isExtinguished = false;
+
+int dir = 2;
+int x = 0;
+int y = 0;
+
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
+//byte maze[20][20] = {
+//  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+//  1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+//  1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+//  1, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+//  1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
+//  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+//  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+//};
+
+void setup() {
+  //interrupt
+  TCCR0A = (1 << WGM01); //enable CTC mode
+  TCCR0B = (1 << CS02); //256 prescaler
+  OCR0A = 78; //ticks
+  TCNT0 = 0;
+  TIMSK0 = (1 << OCIE0A);
+  //ADC
+  ADMUX = (1 << REFS0); //AVcc
+  ADCSRA = (1 << ADEN) | (1 << ADPS0) | (1 << ADPS1) | (1 << ADPS2) | (1 << ADIE); //enable ADC, prescaler select, interrupt enable
+  DIDR0 = (1 << ADC0D);
+  ADC_Init();
+  //LCD
+  lcd.begin(16, 2); //sets the "coordinates" for the LCD screen
+  lcd.setCursor(0, 0);
+  lcd.print("SID:13006010");
+  lcd.setCursor(0, 1);
+  lcd.print("00:00");
+  Serial.begin(9600);
+  // PrintMessage("CMD_START");  // Start the robot// commented because we need to start the robot with the btn pressed
+  sei(); //set external interrupts
+}
+
+void loop() {
+  if ((ADCvalue <= 1000) && (buttonDelay == false)) { //if a button is being pressed then read what button is being pressed (in interrupt)
+    buttonDelay = true;
+  }
+
+  if (isPlaying) {
+    PrintMessage("CMD_SEN_GOAL");        // Query the sensor reading
+    my_delay(10);
+    String incomingByte = Serial.readStringUntil('\r');
+    my_delay(10);
+    int goal = incomingByte.toInt(); // change the taken value to integer value
+    Serial.println(goal); // checking the converted value
+
+    if (goal == 2 || isExtinguished) {  //goal 0=need to find water, goal 1=need to fine fire, goal 2=go back home
+      //LCD displays the current state of the robot
+      lcd.setCursor(1, 7);
+      lcd.print("       SEEK:H");
+      my_delay(10);
+      goHome();
+    }
+    else if (goal == 1) {
+      lcd.setCursor(1, 7);
+      lcd.print("       SEEK:F");
+      my_delay(10);
+      findFire();
+    }
+    else if (goal == 0) {
+      lcd.setCursor(1, 7);
+      lcd.print("       SEEK:W");
+      my_delay(10);
+      findWater();
+    }
+    else {
+      lcd.setCursor(1, 7);
+      lcd.print("       SEEK:C");
+      my_delay(10);
+    }
+  }
+}
+
+void sweep() {
+  if (!isSweeped) { // operate sweeping
+    float minData = 999.99; // 최솟값을 999.99라고 가정
+    int minAngle = 0; // 그 시점의 각도를 저장
+    for (int i = 0; i < 360; i += 10) { // 0도~350도를 확인
+      //      float sum = 0.0;
+      //      int dataCount = 0;
+      float dataArray[11];
+      for (int j = 0; j < 11; j++) {
+        PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+        my_delay(10);
+        //        Serial.setTimeout(0); // 빠른 응답속도를 위해 타임아웃 시간 0으로 설정(?)
+        String incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+        my_delay(10);
+        float data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+        Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+        dataArray[j] = data;
+        //        if (data > 0.0) { // 데이터가 0.0보다 큰 경우(NAN이 아니다)
+        //          sum += data;
+        //          dataCount++;
+        //        }
+      }
+
+      for (int j = 0; j < 11; j++) {
+        float minData = dataArray[j];
+        int minIndex = j;
+        for (int k = j; k < 11; k++) {
+          if (minData > dataArray[k]) {
+            minIndex = k;
+          }
+        }
+        float temp = dataArray[j];
+        dataArray[j] = dataArray[minIndex];
+        dataArray[minIndex] = temp;
+      }
+      float avg = (dataArray[4] + dataArray[5] + dataArray[6]) / 3;
+
+      //      float avg = sum / dataCount;
+      if (avg > 0.0) {
+        if (minData > avg) { // 기존에 저장한 최솟값과 비교하여 더 작은값이 발견되면
+          minData = avg; // 그 값과
+          minAngle = i; // 그 각도를 저장
+          Serial.println("minAngle : " + String(minAngle)); // 갱신한 각도를 확인 // 이 부분도 코멘트처리 혹은 삭제해도 상관없는 부분
+        }
+      }
+      PrintMessage("CMD_SEN_ROT_" + String(360 - i - 10)); // 시계방향으로 10도 회전
+      my_delay(10);
+    }
+
+    for (int i = 360; i >= minAngle; i -= 5) { // 최솟값이 측정되었던 각도를 향해 5도씩 반시계방향으로 회전
+      PrintMessage("CMD_ACT_ROT_0_5");
+      Serial.println(i - 5); // 보고있는 각도를 표시 // 이 부분도 코멘트처리 혹은 삭제해도 상관없는 부분
+    }
+    PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+    my_delay(10);
+    //        Serial.setTimeout(0); // 빠른 응답속도를 위해 타임아웃 시간 0으로 설정(?)
+    String incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+    my_delay(10);
+    float data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+    Serial.println(data);
+    if (data <= 2.3) {
+      PrintMessage("CMD_ACT_ROT_0_90 "); // 반시계방향으로 90도 회전
+      my_delay(10);
+    }
+    isSweeped = true;
+  }
+}
+
+void findWater() {
+  float forwardDistance = 0;
+  float rightDistance = 0;
+  float frDistance = 0;
+  float pingDistance = 0;
+  int whatGoal = 0;
+
+  PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+  my_delay(10);
+  String incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  float data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  forwardDistance = data;
+
+  PrintMessage("CMD_SEN_ROT_270");
+  my_delay(10);
+  PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+  my_delay(10);
+  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  rightDistance = data;
+
+  PrintMessage("CMD_SEN_ROT_315");
+  my_delay(10);
+  PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+  my_delay(10);
+  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  frDistance = data;
+
+  PrintMessage("CMD_SEN_ROT_0");
+  my_delay(10);
+  PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+  my_delay(10);
+  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  pingDistance = data;
+
+  if (pingDistance == 0.00) { // 주변에서 Goal 검색이 안됨(5미터 보다 멀리 있음)
+    // 계속 이동
+    if (0 <= forwardDistance && forwardDistance <= 2.3) {
+      if (0 <= rightDistance && rightDistance <= 2.3) {
+        PrintMessage("CMD_ACT_ROT_0_90");
+        my_delay(10);
+        dir--;
+        if (dir < 1) dir = 4;
+      }
+      else {
+        PrintMessage("CMD_ACT_ROT_1_90");
+        my_delay(10);
+        dir++;
+        if (dir > 4)dir = 1;
+      }
+    }
+    else {
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      if (dir == 1) {
+        y++;
+      }
+      else if (dir == 2) {
+        x++;
+      }
+      else if (dir == 3) {
+        y--;
+      }
+      else {
+        x--;
+      }
+    }
+  }
+  else if (pingDistance <= 2.00) {
+    PrintMessage("CMD_SEN_ID");        // Query the sensor reading
+    my_delay(10);
+    incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+    my_delay(10);
+    whatGoal = incomingByte.toInt(); // 읽어온 값을 float type으로 변경
+    Serial.println(whatGoal); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+    if (whatGoal == 1) {
+      if (pingDistance > 0.5) {
+        float ping[3] = {6, 6, 6};
+        if (forwardDistance < 1.2) {}
+        else {
+          PrintMessage("CMD_ACT_LAT_1_1 ");
+          my_delay(10);
+          PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+          my_delay(10);
+          incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+          my_delay(10);
+          data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+          Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+          ping[1] = data;
+          PrintMessage("CMD_ACT_LAT_0_1 ");
+          my_delay(10);
+        }
+
+        if (rightDistance < 1.2) {}
+        else {
+          PrintMessage("CMD_ACT_ROT_1_90");
+          my_delay(10);
+          PrintMessage("CMD_ACT_LAT_1_1 ");
+          my_delay(10);
+          PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+          my_delay(10);
+          incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+          my_delay(10);
+          data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+          Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+          ping[2] = data;
+          PrintMessage("CMD_ACT_LAT_0_1 ");
+          PrintMessage("CMD_ACT_ROT_0_90");
+          my_delay(10);
+        }
+
+        PrintMessage("CMD_ACT_ROT_0_90");
+        my_delay(10);
+        PrintMessage("CMD_ACT_LAT_1_1 ");
+        my_delay(10);
+        PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+        my_delay(10);
+        incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+        my_delay(10);
+        data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+        Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+        ping[0] = data;
+        PrintMessage("CMD_ACT_LAT_0_1 ");
+        my_delay(10);
+
+        PrintMessage("CMD_ACT_ROT_1_90");
+
+        if (ping[1] < pingDistance && ping[1] != 0) {
+          PrintMessage("CMD_ACT_LAT_1_1 ");
+          my_delay(10);
+          if (dir == 1) {
+            y++;
+          }
+          else if (dir == 2) {
+            x++;
+          }
+          else if (dir == 3) {
+            y--;
+          }
+          else {
+            x--;
+          }
+        }
+        else if (ping[2] < pingDistance && ping[2] != 0) {
+          PrintMessage("CMD_ACT_ROT_1_90");
+          my_delay(10);
+          dir++;
+          if (dir > 4)dir = 1;
+          PrintMessage("CMD_ACT_LAT_1_1 ");
+          my_delay(10);
+          if (dir == 1) {
+            y++;
+          }
+          else if (dir == 2) {
+            x++;
+          }
+          else if (dir == 3) {
+            y--;
+          }
+          else {
+            x--;
+          }
+        }
+        else if (ping[0] < pingDistance && ping[0] != 0) {
+          PrintMessage("CMD_ACT_ROT_0_90");
+          my_delay(10);
+          dir--;
+          if (dir < 1) dir = 4;
+          PrintMessage("CMD_ACT_LAT_1_1 ");
+          my_delay(10);
+          if (dir == 1) {
+            y++;
+          }
+          else if (dir == 2) {
+            x++;
+          }
+          else if (dir == 3) {
+            y--;
+          }
+          else {
+            x--;
+          }
+        }
+        else {
+          PrintMessage("CMD_ACT_LAT_0_1 ");
+          my_delay(10);
+          if (dir == 1) {
+            y--;
+          }
+          else if (dir == 2) {
+            x--;
+          }
+          else if (dir == 3) {
+            y++;
+          }
+          else {
+            x++;
+          }
+        }
+      }
+    }
+    else if (whatGoal == 2) {
+      // 불이니까 다른거 찾으러 가야합니다.
+    }
+  }
+  else { // 5m이내이긴 한데 아직 멀어서 id식별은 불가능한 상태
+    float ping[3] = {6, 6, 6};
+    if (forwardDistance < 1.2) {}
+    else {
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+      my_delay(10);
+      incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+      my_delay(10);
+      data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+      Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+      ping[1] = data;
+      PrintMessage("CMD_ACT_LAT_0_1 ");
+      my_delay(10);
+    }
+
+    if (rightDistance < 1.2) {}
+    else {
+      PrintMessage("CMD_ACT_ROT_1_90");
+      my_delay(10);
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+      my_delay(10);
+      incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+      my_delay(10);
+      data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+      Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+      ping[2] = data;
+      PrintMessage("CMD_ACT_LAT_0_1 ");
+      PrintMessage("CMD_ACT_ROT_0_90");
+      my_delay(10);
+    }
+
+    PrintMessage("CMD_ACT_ROT_0_90");
+    my_delay(10);
+    PrintMessage("CMD_ACT_LAT_1_1 ");
+    my_delay(10);
+    PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+    my_delay(10);
+    incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+    my_delay(10);
+    data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+    Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+    ping[0] = data;
+    PrintMessage("CMD_ACT_LAT_0_1 ");
+    my_delay(10);
+
+    PrintMessage("CMD_ACT_ROT_1_90");
+
+    if (ping[1] < pingDistance && ping[1] != 0) {
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      if (dir == 1) {
+        y++;
+      }
+      else if (dir == 2) {
+        x++;
+      }
+      else if (dir == 3) {
+        y--;
+      }
+      else {
+        x--;
+      }
+    }
+    else if (ping[2] < pingDistance && ping[2] != 0) {
+      PrintMessage("CMD_ACT_ROT_1_90");
+      my_delay(10);
+      dir++;
+      if (dir > 4)dir = 1;
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      if (dir == 1) {
+        y++;
+      }
+      else if (dir == 2) {
+        x++;
+      }
+      else if (dir == 3) {
+        y--;
+      }
+      else {
+        x--;
+      }
+    }
+    else if (ping[0] < pingDistance && ping[0] != 0) {
+      PrintMessage("CMD_ACT_ROT_0_90");
+      my_delay(10);
+      dir--;
+      if (dir < 1) dir = 4;
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      if (dir == 1) {
+        y++;
+      }
+      else if (dir == 2) {
+        x++;
+      }
+      else if (dir == 3) {
+        y--;
+      }
+      else {
+        x--;
+      }
+    }
+  }
+}
+
+void findFire() {
+  float forwardDistance = 0;
+  float rightDistance = 0;
+  float frDistance = 0;
+  float pingDistance = 0;
+  int whatGoal = 0;
+
+  PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+  my_delay(10);
+  String incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  float data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  forwardDistance = data;
+
+  PrintMessage("CMD_SEN_ROT_270");
+  my_delay(10);
+  PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+  my_delay(10);
+  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  rightDistance = data;
+
+  PrintMessage("CMD_SEN_ROT_315");
+  my_delay(10);
+  PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+  my_delay(10);
+  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  frDistance = data;
+
+  PrintMessage("CMD_SEN_ROT_0");
+  my_delay(10);
+  PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+  my_delay(10);
+  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  my_delay(10);
+  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  pingDistance = data;
+
+  if (pingDistance == 0.00) { // 주변에서 Goal 검색이 안됨(5미터 보다 멀리 있음)
+    // 계속 이동
+    if (0 <= forwardDistance && forwardDistance <= 2.3) {
+      if (0 <= rightDistance && rightDistance <= 2.3) {
+        PrintMessage("CMD_ACT_ROT_0_90");
+        my_delay(10);
+        dir--;
+        if (dir < 1) dir = 4;
+      }
+      else {
+        PrintMessage("CMD_ACT_ROT_1_90");
+        my_delay(10);
+        dir++;
+        if (dir > 4)dir = 1;
+      }
+    }
+    else {
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      if (dir == 1) {
+        y++;
+      }
+      else if (dir == 2) {
+        x++;
+      }
+      else if (dir == 3) {
+        y--;
+      }
+      else {
+        x--;
+      }
+    }
+  }
+  else if (pingDistance <= 0.5) {
+    isExtinguished = true; // 불을 찾아서 꺼버렸음
+  }
+  else { // 5m이내이긴 한데 아직 멀어서 id식별은 불가능한 상태
+    float ping[3] = {6, 6, 6};
+    if (forwardDistance < 1.2) {}
+    else {
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+      my_delay(10);
+      incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+      my_delay(10);
+      data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+      Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+      ping[1] = data;
+      PrintMessage("CMD_ACT_LAT_0_1 ");
+      my_delay(10);
+    }
+
+    if (rightDistance < 1.2) {}
+    else {
+      PrintMessage("CMD_ACT_ROT_1_90");
+      my_delay(10);
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+      my_delay(10);
+      incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+      my_delay(10);
+      data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+      Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+      ping[2] = data;
+      PrintMessage("CMD_ACT_LAT_0_1 ");
+      PrintMessage("CMD_ACT_ROT_0_90");
+      my_delay(10);
+    }
+
+    PrintMessage("CMD_ACT_ROT_0_90");
+    my_delay(10);
+    PrintMessage("CMD_ACT_LAT_1_1 ");
+    my_delay(10);
+    PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+    my_delay(10);
+    incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+    my_delay(10);
+    data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
+    Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+    ping[0] = data;
+    PrintMessage("CMD_ACT_LAT_0_1 ");
+    my_delay(10);
+
+    PrintMessage("CMD_ACT_ROT_1_90");
+
+    if (ping[1] < pingDistance && ping[1] != 0) {
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      if (dir == 1) {
+        y++;
+      }
+      else if (dir == 2) {
+        x++;
+      }
+      else if (dir == 3) {
+        y--;
+      }
+      else {
+        x--;
+      }
+    }
+    else if (ping[2] < pingDistance && ping[2] != 0) {
+      PrintMessage("CMD_ACT_ROT_1_90");
+      my_delay(10);
+      dir++;
+      if (dir > 4)dir = 1;
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      if (dir == 1) {
+        y++;
+      }
+      else if (dir == 2) {
+        x++;
+      }
+      else if (dir == 3) {
+        y--;
+      }
+      else {
+        x--;
+      }
+    }
+    else if (ping[0] < pingDistance && ping[0] != 0) {
+      PrintMessage("CMD_ACT_ROT_0_90");
+      my_delay(10);
+      dir--;
+      if (dir < 1) dir = 4;
+      PrintMessage("CMD_ACT_LAT_1_1 ");
+      my_delay(10);
+      if (dir == 1) {
+        y++;
+      }
+      else if (dir == 2) {
+        x++;
+      }
+      else if (dir == 3) {
+        y--;
+      }
+      else {
+        x--;
+      }
+    }
+  }
+}
+
+void goHome() {
+  if (x <= 8 && y <= 10) {
+    if (dir == 1) {
+      PrintMessage("CMD_ACT_ROT_1_180");
+      my_delay(10);
+      dir++;
+      if (dir > 4) dir = 1;
+      dir++;
+      if (dir > 4) dir = 1;
+    }
+    else if (dir == 2) {
+      PrintMessage("CMD_ACT_ROT_1_90");
+      my_delay(10);
+      dir++;
+      if (dir > 4) dir = 1;
+    }
+    else if (dir == 3) {
+    }
+    else if (dir == 4) {
+      PrintMessage("CMD_ACT_ROT_0_90");
+      my_delay(10);
+      dir--;
+      if (dir < 1) dir = 4;
+    }
+    //calculation for pythagoras
+    float rDistance = sqrt(pow(x, 2) + pow(y, 2));
+    float theta = asin(y / rDistance);
+    const double pi = 3.1415926535897932384;
+    float degree = theta * (180 / pi);
+
+    PrintMessage("CMD_ACT_ROT_1_" + String(90 - degree));
+    my_delay(10);
+    PrintMessage("CMD_ACT_LAT_1_" + String(rDistance));
+    my_delay(10);
+
+    //    lcd.setCursor(1, 7);
+    //    lcd.print("       SEEK:C");
+    //    my_delay(10);
+    missionClear();
+  }
+}
+
+int read_LCD_buttons() {
+  if (ADCvalue > 1000) return btnNONE;
+  if (ADCvalue < 50) return btnRIGHT;
+  if (ADCvalue < 195) return btnUP;
+  if (ADCvalue < 380) return btnDOWN;
+  if (ADCvalue < 555) return btnLEFT;
+  if (ADCvalue < 790) return btnSELECT;
+  return btnNONE;
+}
+
+void ADC_Init() {
+  ADCSRA |= (1 << ADSC); //start conversion
+}
+
+void buttonLCD() { // when btn is pressed(except “Control Mode” it is in the loop)
+  switch (lcd_key) {
+    case btnRIGHT: {
+        break;
+      }
+    case btnLEFT: {
+        break;
+      }
+    case btnUP: {
+        break;
+      }
+    case btnDOWN: {
+        break;
+      }
+    case btnSELECT: {
+        PrintMessage("CMD_START");
+        isPlaying = true;
+        break;
+      }
+    case btnNONE: {
+        break;
+      }
+  }
+}
+
+ISR(ADC_vect) { // read ADCvalue
+  switch (ADMUX) {
+    case 0x40: { //0b1000000
+        ADCvalue = ADC;
+        ADC_Init();
+        break;
+      }
+    default: {
+        break;
+      }
+  }
+}
+
+ISR(TIMER0_COMPA_vect) { //interrupts - think of it like juggling or a loop, you'd want this to happen alongside everything else
+  debouncerCount++; //debouncer: a button delay in between presses (250 ms, could be any number)
+  if ((debouncerCount >= 250) && (ADCvalue <= 1000) && (buttonDelay == true)) { //btn re-reads the value after 250ms
+    lcd_key = read_LCD_buttons();
+    buttonLCD();
+    buttonDelay = false;
+    debouncerCount = 0;
+  }
+
+  timerCount++; //for the clock
+  if (timerCount >= 1000 && isPlaying) { //when this counter reaches 1 second //timer가 계속해서 시간이 지나다가 timerCount가 1초가 되면 second라는 변수가 1 증가한다.
+    seconds++;
+    if (seconds == 60) { //증가하는 second의 함수가 60을 도달했을때, 60과 같아 졌을때 minutes라는 변수가 1 증가한다.
+      minutes++;
+      seconds = 0;  //minutes함수가 1 증가함과 동시에 seconds함수를 0으로 만들어라.
+    }
+    printTime();
+    timerCount = 0;
+  }
+}
+void printTime() {
+  lcd.setCursor(0, 1);
+  if (minutes < 10) {
+    lcd.print("0");
+  }
+  lcd.print(minutes);
+  lcd.print(":");
+  if (seconds < 10) {
+    lcd.print("0");
+  }
+  lcd.print(seconds);
+}
+
+void PrintMessage(String message) { // send serial msg to MatLab with carriage return and newline character
+  Serial.print(message);
+  Serial.write(13); //carriage return character (ASCII 13, or '\r')
+  Serial.write(10); //newline character (ASCII 10, or '\n')
+}
+
+void missionClear() {
+  PrintMessage("CMD_CLOSE");
+  isPlaying = false;
+}
+
+void my_delay(int delaytime)
+{
+  volatile int TimerCounter = 0;
+  timerCount += delaytime;
+  while (TimerCounter <= delaytime)
+  {
+    if (TCNT2 >= 254)
+    {
+      TimerCounter++;
+    }
+  }
+}
