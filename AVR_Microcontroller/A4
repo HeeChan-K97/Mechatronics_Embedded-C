@@ -194,62 +194,64 @@ void findWater() {
 
   PrintMessage("CMD_SEN_IR");        // Query the sensor reading
   my_delay(10);
-  String incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  String incomingByte = Serial.readStringUntil('\r');
   my_delay(10);
-  float data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  float data = incomingByte.toFloat();
+  Serial.println(data); //check
   forwardDistance = data;
 
-  PrintMessage("CMD_SEN_ROT_270");
+  PrintMessage("CMD_SEN_ROT_270"); //sensor reading right side
   my_delay(10);
-  PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+  PrintMessage("CMD_SEN_IR");//measurement
   my_delay(10);
-  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  incomingByte = Serial.readStringUntil('\r');
   my_delay(10);
-  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+  data = incomingByte.toFloat();
+  Serial.println(data); //check
   rightDistance = data;
 
-  PrintMessage("CMD_SEN_ROT_315");
+  PrintMessage("CMD_SEN_ROT_315"); //SE direction
   my_delay(10);
-  PrintMessage("CMD_SEN_IR");        // Query the sensor reading
+  PrintMessage("CMD_SEN_IR"); //measurement
   my_delay(10);
-  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  incomingByte = Serial.readStringUntil('\r');
   my_delay(10);
-  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
-  frDistance = data;
+  data = incomingByte.toFloat();
+  Serial.println(data); //check
+  frDistance = data; //front-right distance, diagonal
 
-  PrintMessage("CMD_SEN_ROT_0");
+  PrintMessage("CMD_SEN_ROT_0");  //sensing front
   my_delay(10);
-  PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+  PrintMessage("CMD_SEN_PING"); //ping for any detection
   my_delay(10);
-  incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+  incomingByte = Serial.readStringUntil('\r');
   my_delay(10);
-  data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-  Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
-  pingDistance = data;
+  data = incomingByte.toFloat();
+  Serial.println(data); //Check
+  pingDistance = data;  //distance from the robot to pinged goal
 
-  if (pingDistance == 0.00) { // 주변에서 Goal 검색이 안됨(5미터 보다 멀리 있음)
-    // 계속 이동
-    if (0 <= forwardDistance && forwardDistance <= 2.3) {
-      if (0 <= rightDistance && rightDistance <= 2.3) {
+  if (pingDistance == 0.00) { //if there is no detection of the goal within 5m range
+    // movement coding
+    if (0 <= forwardDistance && forwardDistance <= 2.3) {//if forward measured distance is between 0~2.3m consider there is a wall, need to find other path
+      if (0 <= rightDistance && rightDistance <= 2.3) {//if there is a wall on the right side of the robot
+        //pretend that East=2, South=3, West=4, North=1
         PrintMessage("CMD_ACT_ROT_0_90");
         my_delay(10);
-        dir--;
+        dir--; //when the robot rotates in CCW dir--
         if (dir < 1) dir = 4;
       }
-      else {
-        PrintMessage("CMD_ACT_ROT_1_90");
+      else {//when there is no wall on the right side, to turn right
+        PrintMessage("CMD_ACT_ROT_1_90");//CW rotation
         my_delay(10);
-        dir++;
+        dir++;//when the robot rotates in CW dir++
         if (dir > 4)dir = 1;
       }
     }
-    else {
-      PrintMessage("CMD_ACT_LAT_1_1 ");
+    else {//if there isn't a wall in front
+      PrintMessage("CMD_ACT_LAT_1_1 ");//robot move 1m forward
       my_delay(10);
-      if (dir == 1) {
+      //to record the displacement of the robot
+      if (dir == 1) {//coordinating system, we can guess the direction since y++=y positive axis
         y++;
       }
       else if (dir == 2) {
@@ -263,68 +265,71 @@ void findWater() {
       }
     }
   }
-  else if (pingDistance <= 2.00) {
-    PrintMessage("CMD_SEN_ID");        // Query the sensor reading
+  else if (pingDistance <= 2.00) {//in case when the goal is near 2m range
+    PrintMessage("CMD_SEN_ID");        //identify which goal is it, water or fire
     my_delay(10);
-    incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+    incomingByte = Serial.readStringUntil('\r');
     my_delay(10);
-    whatGoal = incomingByte.toInt(); // 읽어온 값을 float type으로 변경
-    Serial.println(whatGoal); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
-    if (whatGoal == 1) {
+    whatGoal = incomingByte.toInt();
+    Serial.println(whatGoal); //check
+    if (whatGoal == 1) {//if water
       if (pingDistance > 0.5) {
-        float ping[3] = {6, 6, 6};
-        if (forwardDistance < 1.2) {}
-        else {
+        float ping[3] = {6, 6, 6};//storage for three reading values,Forward,Left,Right
+        //sensing range is max 5m
+        //ping[0]=left, ping[1]=forward, ping[2]=right
+        if (forwardDistance < 1.2) {}//when forward distance is less than 1.2 the robot cannot move forward
+        else {//further than 1.2m
           PrintMessage("CMD_ACT_LAT_1_1 ");
           my_delay(10);
-          PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+          PrintMessage("CMD_SEN_PING");
           my_delay(10);
-          incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+          incomingByte = Serial.readStringUntil('\r');
           my_delay(10);
-          data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-          Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
-          ping[1] = data;
-          PrintMessage("CMD_ACT_LAT_0_1 ");
+          data = incomingByte.toFloat();
+          Serial.println(data); //check
+          ping[1] = data;//store in 1
+          PrintMessage("CMD_ACT_LAT_0_1 ");//return back
           my_delay(10);
         }
 
-        if (rightDistance < 1.2) {}
+        if (rightDistance < 1.2) {}//when right distance is less than 1.2 the robot cannot move forward
         else {
           PrintMessage("CMD_ACT_ROT_1_90");
           my_delay(10);
           PrintMessage("CMD_ACT_LAT_1_1 ");
           my_delay(10);
-          PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+          PrintMessage("CMD_SEN_PING");
           my_delay(10);
-          incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+          incomingByte = Serial.readStringUntil('\r');
           my_delay(10);
-          data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-          Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+          data = incomingByte.toFloat();
+          Serial.println(data); //Check
           ping[2] = data;
-          PrintMessage("CMD_ACT_LAT_0_1 ");
+          PrintMessage("CMD_ACT_LAT_0_1 ");//return back
           PrintMessage("CMD_ACT_ROT_0_90");
           my_delay(10);
         }
-
-        PrintMessage("CMD_ACT_ROT_0_90");
+        //ping[0]=left, ping[1]=forward, ping[2]=right
+        PrintMessage("CMD_ACT_ROT_0_90");//CCW 90degree
         my_delay(10);
         PrintMessage("CMD_ACT_LAT_1_1 ");
         my_delay(10);
-        PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+        PrintMessage("CMD_SEN_PING");
         my_delay(10);
-        incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+        incomingByte = Serial.readStringUntil('\r');
         my_delay(10);
-        data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-        Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+        data = incomingByte.toFloat();
+        Serial.println(data); //Check
         ping[0] = data;
-        PrintMessage("CMD_ACT_LAT_0_1 ");
+        PrintMessage("CMD_ACT_LAT_0_1 ");//return back
         my_delay(10);
 
-        PrintMessage("CMD_ACT_ROT_1_90");
+        PrintMessage("CMD_ACT_ROT_1_90");//the robot is facing forward again
 
-        if (ping[1] < pingDistance && ping[1] != 0) {
+        if (ping[1] < pingDistance && ping[1] != 0) {//when the read value during forward movement the robot move forward, hence the robot gets closer to the goal
           PrintMessage("CMD_ACT_LAT_1_1 ");
           my_delay(10);
+          //to record the displacement of the robot
           if (dir == 1) {
             y++;
           }
@@ -338,7 +343,7 @@ void findWater() {
             x--;
           }
         }
-        else if (ping[2] < pingDistance && ping[2] != 0) {
+        else if (ping[2] < pingDistance && ping[2] != 0) {//when the read value during right movement the robot move to the right, hence the robot gets closer to the goal
           PrintMessage("CMD_ACT_ROT_1_90");
           my_delay(10);
           dir++;
@@ -358,7 +363,7 @@ void findWater() {
             x--;
           }
         }
-        else if (ping[0] < pingDistance && ping[0] != 0) {
+        else if (ping[0] < pingDistance && ping[0] != 0) {//when the read value during left movement the robot move to the left, hence the robot gets closer to the goal
           PrintMessage("CMD_ACT_ROT_0_90");
           my_delay(10);
           dir--;
@@ -378,7 +383,7 @@ void findWater() {
             x--;
           }
         }
-        else {
+        else {//ping[0]=left, ping[1]=forward, ping[2]=right
           PrintMessage("CMD_ACT_LAT_0_1 ");
           my_delay(10);
           if (dir == 1) {
@@ -396,61 +401,62 @@ void findWater() {
         }
       }
     }
-    else if (whatGoal == 2) {
-      // 불이니까 다른거 찾으러 가야합니다.
-    }
+    //    else if (whatGoal == 2) {
+    //      // 불이니까 다른거 찾으러 가야합니다.
+    //    }
   }
-  else { // 5m이내이긴 한데 아직 멀어서 id식별은 불가능한 상태
+  else { // the goal can be detected by PING but not by ID 동일한 방식으로 앞, 좌, 우를 살핀다
     float ping[3] = {6, 6, 6};
-    if (forwardDistance < 1.2) {}
-    else {
+    if (forwardDistance < 1.2) {}   //forward
+    else {//ping[0]=left, ping[1]=forward, ping[2]=right
       PrintMessage("CMD_ACT_LAT_1_1 ");
       my_delay(10);
-      PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+      PrintMessage("CMD_SEN_PING");
       my_delay(10);
-      incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+      incomingByte = Serial.readStringUntil('\r');
       my_delay(10);
-      data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-      Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+      data = incomingByte.toFloat();
+      Serial.println(data); //Check
       ping[1] = data;
       PrintMessage("CMD_ACT_LAT_0_1 ");
       my_delay(10);
     }
-
+    //right
     if (rightDistance < 1.2) {}
     else {
       PrintMessage("CMD_ACT_ROT_1_90");
       my_delay(10);
       PrintMessage("CMD_ACT_LAT_1_1 ");
       my_delay(10);
-      PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+      PrintMessage("CMD_SEN_PING");
       my_delay(10);
-      incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+      incomingByte = Serial.readStringUntil('\r');
       my_delay(10);
-      data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-      Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+      data = incomingByte.toFloat();
+      Serial.println(data); //Check
       ping[2] = data;
       PrintMessage("CMD_ACT_LAT_0_1 ");
       PrintMessage("CMD_ACT_ROT_0_90");
       my_delay(10);
     }
-
+    //left
     PrintMessage("CMD_ACT_ROT_0_90");
     my_delay(10);
     PrintMessage("CMD_ACT_LAT_1_1 ");
     my_delay(10);
-    PrintMessage("CMD_SEN_PING");        // Query the sensor reading
+    PrintMessage("CMD_SEN_PING");
     my_delay(10);
-    incomingByte = Serial.readStringUntil('\r'); // 캐리지 리턴 될때까지 읽어라.
+    incomingByte = Serial.readStringUntil('\r');
     my_delay(10);
-    data = incomingByte.toFloat(); // 읽어온 값을 float type으로 변경
-    Serial.println(data); // 그 값을 확인 // 이 부분은 코멘트처리 혹은 삭제해도 상관없는 부분
+    data = incomingByte.toFloat();
+    Serial.println(data); //Check
     ping[0] = data;
     PrintMessage("CMD_ACT_LAT_0_1 ");
     my_delay(10);
 
     PrintMessage("CMD_ACT_ROT_1_90");
 
+    //ping[0]=left, ping[1]=forward, ping[2]=right
     if (ping[1] < pingDistance && ping[1] != 0) {
       PrintMessage("CMD_ACT_LAT_1_1 ");
       my_delay(10);
