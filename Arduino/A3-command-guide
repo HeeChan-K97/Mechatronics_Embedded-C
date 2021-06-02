@@ -30,6 +30,7 @@ Identify which goal is nearby, only work if the robot is within 2 metre of the g
 
 CMD_SEN_GOAL
 Check what goal the robot achieved, if the robot has reached goal 1, this will return 1, if reached goal 2 will return 2, if have not achieved any goal, will return 0
+Water is 1 and the fire is 2
 
 CMD_SEN_COLL
 Return the number of collisions between robot and the wall
